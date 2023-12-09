@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Lab 5</title>
+
+         <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+           integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+           crossorigin=""/>
+
+         <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+           integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+           crossorigin=""></script>
+
+
+ <!-- Load c3.css -->
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/c3/0.7.20/c3.css" rel="stylesheet">
+
+        <!-- Load d3.js and c3.js -->
+        <script src="https://d3js.org/d3.v5.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/c3/0.7.20/c3.min.js"></script>
+
+
+		   
+		 <script type="text/javascript" src="data.js"></script>
+
+ <style type="text/css">
+  
+  .legend {
+      padding: 6px 8px;
+      line-height: 18px;
+      background: rgba(255,255,255,0.9);
+      box-shadow: 0 0 15px rgba(0,0,0,0.2);
+      border-radius: 5px;
+  }
+
+ 
+   .legend i {
+      width: 15px;
+      height: 15px;
+      float: left;
+      margin-right: 8px;
+      opacity: 0.7;
+  }
+</style>
+
+
+
+    </head>
+
+    <body>
+        <div id="map" style="height: 1000px"></div>
+        <div id="chart"></div>
+        <script type="text/javascript">
+
+          var map = L.map('map', {
+              center: [37,-96.07],
+              zoom: 1
+          });
+
+         L.tileLayer('https://cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png', {
+           attribution: 'Map tiles by Carto, under CC BY 3.0. Data by OpenStreetMap, under ODbL.',
+           maxZoom: 11,
+           minZoom: 5
+         }).addTo(map);
+
+		 function getColor(value) {
+    return value > 1008 ? '#53278f':
+           value > 465  ? '#cccccc':
+           value > 228  ? '#969696':
+           value > 107 ? '#636363':
+                         '#252525';
+}
+
+function style(feature){
+      return {
+        fillColor: getColor(feature.properties.pop_den),
+        weight: 2,
+        opacity: 10,
+        color: 'gray',
+        fillOpacity: 0.9
+      };
+    }
+
+function makeChart(props) {
+// props is just a variable, which will be replaced with the layer's properties 
+// when using the function
+    c3.generate({   
+    
+        bindto: '#chart',  // id of the chart div, as defined earlier
+
+        size: { 
+            height: 180,
+            width: 180        
+        },
+
+        title:{
+            text: props.NAME  // Use the NAME attribute as chart title 
+                              // This is displayed above the chart
+                              // You may use other strings, HTML elements or combined
+        },
+
+        data: {
+            // Define the actual data
+            // I use the attribute values as data for making the charts
+            // The strings are labels of the charts (shown in legend)
+            columns: [  
+                ['pop_den', props.pop_den],
+                ['age20to34', props.age20to34],
+                ['age35to49', props.Asian],
+                ['age50to69', props.Mixed],
+                ['Other', props.Other]
+            ],
+
+            type: 'donut',  // chart type
+        },
+
+        donut:{ // options to customize the donut chart
+            label: {
+                show: false // set to not show labels on the segments (too busy)
+            },
+            width: 30  // width of donut
+        },
+
+        color:{ // colors of donut segments, same order as the data 
+            pattern:["#EC7063", "#5DADE2","#27AE60","#F4D03F","#E67E22"]
+        }
+    });
+}
+
+
+
+
+
+
+function highlightFeature(e) {
+    // Get access to the feature that was hovered through e.target
+    var feature = e.target;
+
+    // Set a thick grey border on the feature as mouseover effect
+    // Adjust the values below to change the highlighting styles of features on mouseover
+    // Check out https://leafletjs.com/reference-1.3.4.html#path for more options for changing style
+    feature.setStyle({
+        weight: 5,
+        color: '#666',
+        fillOpacity: 0.7
+    });
+
+    // Bring the highlighted feature to front so that the border doesn’t clash with nearby states
+    // But not for IE, Opera or Edge, since they have problems doing bringToFront on mouseover
+    if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+        feature.bringToFront();
+    }
+}
+var geojson; // define a variable to make the geojson layer accessible for the funtion to use   
+            
+function resetHighlight(e) {
+    geojson.resetStyle(e.target);
+}
+ // Combine the mouseover and mouseout actions (defined above)
+            function onEachFeature(feature, layer) {
+                layer.on({
+                    mouseover: highlightFeature,
+                    mouseout: resetHighlight,
+                });
+            }
+
+                       
+            geojson = L.geoJson(data, {
+                style:style,
+                onEachFeature: onEachFeature
+            }).addTo(map);
+
+
+     var legend = L.control({position: 'topright'}); // position
+
+legend.onAdd = function (map) {
+
+    var div = L.DomUtil.create('div', 'legend'),
+        grades = [0, 107, 228, 465]; 
+
+    div.innerHTML = '<b>Population Density over 70 <br> 2011 <br></b>'; 
+    for (var i = 0; i < grades.length; i++) {
+        div.innerHTML +=
+        '<i style="background:' + getColor(grades[i] + 1) + '"></i>' +
+        grades[i] + (grades[i + 1] ? '&ndash;' + grades[i + 1] + '<br>' : '+');
+    }
+
+    return div;
+};
+
+legend.addTo(map);
+
+        </script>
+   </body>
+</html>
+
